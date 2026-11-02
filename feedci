@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# FeedCI from the command line. Exit codes: 0 passed, 1 failed, 2 inconclusive, 3 could not run.
+# Set FEEDCI_API_KEY to a feeds.one API key that can run feed checks.
+set -uo pipefail
+
+usage() {
+    cat <<'TEXT'
+Usage: feedci (--url URL | --file PATH) [options]
+
+  --url URL             Check a live feed
+  --file PATH           Check a built feed file
+  --fail-on LEVEL       Fail on "fail" (default) or also on "warn"
+  --require LIST        Comma-separated checks that must pass, such as item-ids,dates
+  --min-items N         The fewest items the feed may contain
+  --stable-ids          Fail if an existing item's ID changed since the last check
+  --max-age-days N      Fail if the newest item is older than N days
+  --require-licence     Fail if the feed declares no rights or licence information
+  --baseline NAME       Name to compare item IDs under, needed for --stable-ids with --file
+  --allow-inconclusive  Exit 0 when a required check could not run
+TEXT
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --url) export FEEDCI_URL="${2:-}"; shift 2 ;;
+        --file) export FEEDCI_FILE="${2:-}"; shift 2 ;;
+        --fail-on) export FEEDCI_FAIL_ON="${2:-}"; shift 2 ;;
+        --require) export FEEDCI_REQUIRE="${2:-}"; shift 2 ;;
+        --min-items) export FEEDCI_MIN_ITEMS="${2:-}"; shift 2 ;;
+        --max-age-days) export FEEDCI_MAX_AGE_DAYS="${2:-}"; shift 2 ;;
+        --baseline) export FEEDCI_BASELINE="${2:-}"; shift 2 ;;
+        --stable-ids) export FEEDCI_STABLE_IDS=true; shift ;;
+        --require-licence) export FEEDCI_REQUIRE_LICENCE=true; shift ;;
+        --allow-inconclusive) export FEEDCI_ALLOW_INCONCLUSIVE=true; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "feedci: unknown option $1" >&2; usage >&2; exit 3 ;;
+    esac
+done
+
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/check.sh"
